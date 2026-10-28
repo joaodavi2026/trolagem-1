@@ -376,20 +376,55 @@
 
   // ===== Entrada: o clique libera o som e começa a contagem =====
   const entrada = document.getElementById('entrada');
-  entrada.addEventListener('click', () => {
-    if (entrada.classList.contains('fora')) return;
-    entrada.classList.add('fora');
-    // "aquece" áudio e vídeo dentro do clique (necessário no iPhone), sem fazer barulho
+  const botaoEntrada = entrada.querySelector('button');
+  const SEGURAR = !('vibrate' in navigator);   // iPhone: precisa do dedo na tela para o haptic funcionar
+
+  function liberarMidia() {
+    // "aquece" áudio, vídeo e haptic dentro do gesto (necessário no iPhone), sem fazer barulho
     grito.muted = true;
     grito.play().then(() => { grito.pause(); grito.currentTime = 0; grito.muted = semSom; })
                 .catch(() => { grito.muted = semSom; });
     video.play().then(() => { video.pause(); video.currentTime = 0; }).catch(() => {});
-    if (!('vibrate' in navigator)) {                       // "aquece" haptic e áudio dentro do gesto
+    if (SEGURAR) {
       rotuloHaptic.click();
       try { ctxAudio = ctxAudio || new (window.AudioContext || window.webkitAudioContext)(); ctxAudio.resume(); } catch (e) {}
     }
-    agendarSusto();
-  });
+  }
+
+  if (!SEGURAR) {
+    // Android / PC: clica, espera 4 s e vibra
+    entrada.addEventListener('click', () => {
+      if (entrada.classList.contains('fora')) return;
+      entrada.classList.add('fora');
+      liberarMidia();
+      agendarSusto();
+    });
+  } else {
+    // iPhone: segura o dedo por 4 s; o susto e o haptic acontecem com o dedo ainda na tela
+    botaoEntrada.textContent = 'Segure o dedo aqui por 4 segundos ↗';
+    entrada.style.cssText += ';-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none';
+    let timerSegurar = null;
+    const comecarSegurar = (e) => {
+      if (entrada.classList.contains('fora') || timerSegurar) return;
+      e.preventDefault();
+      liberarMidia();
+      botaoEntrada.textContent = 'Segurando... não solte';
+      timerSegurar = setTimeout(() => {
+        timerSegurar = null;
+        entrada.classList.add('fora');
+        jumpscare();                                  // o dedo continua na tela
+      }, ESPERA_ANTES_DO_SUSTO);
+    };
+    const soltou = () => {
+      if (!timerSegurar) return;
+      clearTimeout(timerSegurar); timerSegurar = null;
+      botaoEntrada.textContent = 'Segure o dedo aqui por 4 segundos ↗';
+    };
+    entrada.addEventListener('touchstart', comecarSegurar, { passive: false });
+    entrada.addEventListener('touchend', soltou);
+    entrada.addEventListener('touchcancel', soltou);
+    entrada.addEventListener('contextmenu', e => e.preventDefault());
+  }
 </script>
 </body>
 </html>
