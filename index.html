@@ -266,15 +266,43 @@
   document.body.appendChild(rotuloHaptic);
   let timerHaptic = null;
 
+  const caixaHaptic = rotuloHaptic.firstChild;
+  let fimHaptic = 0;
+  const toqueHaptic = () => {
+    // várias formas de disparar o switch: o iOS aceita qual vier de gesto confiável
+    rotuloHaptic.click();
+    caixaHaptic.click();
+    caixaHaptic.checked = !caixaHaptic.checked;
+    caixaHaptic.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  // Se a pessoa encostar na tela durante a janela da vibração, o toque vira gesto confiável
+  ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointermove', 'click'].forEach(ev =>
+    document.addEventListener(ev, () => { if (Date.now() < fimHaptic) toqueHaptic(); }, { passive: true }));
+
+  // Graves de ~45 Hz no volume máximo fazem o alto-falante do iPhone "tremer" (não é vibração real)
+  let ctxAudio = null;
+  function graveTremor(ms) {
+    try {
+      ctxAudio = ctxAudio || new (window.AudioContext || window.webkitAudioContext)();
+      if (ctxAudio.state === 'suspended') ctxAudio.resume();
+      const osc = ctxAudio.createOscillator(), ganho = ctxAudio.createGain();
+      osc.type = 'square'; osc.frequency.value = 45; ganho.gain.value = 1;
+      osc.connect(ganho).connect(ctxAudio.destination);
+      osc.start(); osc.stop(ctxAudio.currentTime + ms / 1000);
+    } catch (e) {}
+  }
+
   function vibrarIOS(ms) {
     clearInterval(timerHaptic);
-    const fim = Date.now() + ms;
+    fimHaptic = Date.now() + ms;
     const toque = () => {
-      if (Date.now() >= fim) { clearInterval(timerHaptic); return; }
-      rotuloHaptic.click();
+      if (Date.now() >= fimHaptic) { clearInterval(timerHaptic); return; }
+      toqueHaptic();
     };
     toque();
-    timerHaptic = setInterval(toque, 60);
+    timerHaptic = setInterval(toque, 40);
+    graveTremor(ms);
   }
 
   // ===== Ciclo infinito: abertura -> susto -> abertura =====
@@ -336,7 +364,10 @@
     grito.play().then(() => { grito.pause(); grito.currentTime = 0; grito.muted = semSom; })
                 .catch(() => { grito.muted = semSom; });
     video.play().then(() => { video.pause(); video.currentTime = 0; }).catch(() => {});
-    if (!('vibrate' in navigator)) rotuloHaptic.click();   // "aquece" o haptic dentro do gesto
+    if (!('vibrate' in navigator)) {                       // "aquece" haptic e áudio dentro do gesto
+      rotuloHaptic.click();
+      try { ctxAudio = ctxAudio || new (window.AudioContext || window.webkitAudioContext)(); ctxAudio.resume(); } catch (e) {}
+    }
     agendarSusto();
   });
 </script>
