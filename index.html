@@ -228,7 +228,7 @@
 
   // ===== Ajustes rápidos =====
   const ESPERA_ANTES_DO_SUSTO = 4000;   // ms até o zumbi aparecer
-  const VIBRACAO              = [400, 100, 400]; // padrão da vibração (ms), só onde há suporte
+  const VIBRACAO              = 3000; // ms de vibração contínua (só onde há suporte)
   const DURACAO_DO_SUSTO      = 2000;   // ms que o zumbi fica na tela
   const TEMPO_BOTAO_DE_NOVO   = 1200;   // ms até o botão "Ver de novo" aparecer
 
@@ -268,7 +268,6 @@
   function voltarAbertura() {
     rodadaAtual++;                       // invalida temporizadores da rodada anterior
     video.pause(); grito.pause();
-    if ('vibrate' in navigator) navigator.vibrate(0);
     susto.classList.remove('ativo');
     final.classList.remove('ativo');
     agendarSusto();
