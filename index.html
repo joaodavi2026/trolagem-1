@@ -151,6 +151,21 @@
   }
   .som:hover { border-color: #f2efe8; }
   .som[aria-pressed="true"] { color: #d4585c; border-color: #d4585c; }
+
+  /* Tremor da tela inteira (funciona em PC, Android e iPhone) */
+  @keyframes tremer {
+    0%, 100% { transform: translate(0, 0) rotate(0); }
+    10% { transform: translate(-9px, 6px) rotate(-0.6deg); }
+    20% { transform: translate(8px, -7px) rotate(0.5deg); }
+    30% { transform: translate(-7px, -5px) rotate(0.4deg); }
+    40% { transform: translate(10px, 8px) rotate(-0.5deg); }
+    50% { transform: translate(-8px, 4px) rotate(0.6deg); }
+    60% { transform: translate(6px, -9px) rotate(-0.4deg); }
+    70% { transform: translate(-10px, 7px) rotate(0.5deg); }
+    80% { transform: translate(9px, -4px) rotate(-0.6deg); }
+    90% { transform: translate(-6px, 8px) rotate(0.4deg); }
+  }
+  html.tremendo { animation: tremer .12s linear infinite; overflow: hidden; }
 </style>
 </head>
 <body>
@@ -306,7 +321,7 @@
   }
 
   // ===== Ciclo infinito: abertura -> susto -> abertura =====
-  let proximoSusto = null, rodadaAtual = 0;
+  let proximoSusto = null, rodadaAtual = 0, timerTremor = null;
 
   function agendarSusto() {
     clearTimeout(proximoSusto);
@@ -342,6 +357,11 @@
     // vibração (Android/Chrome; iPhone não suporta)
     if ('vibrate' in navigator) navigator.vibrate(VIBRACAO);
     else vibrarIOS(VIBRACAO);
+
+    // tremor visual da tela pelo mesmo tempo da vibração
+    document.documentElement.classList.add('tremendo');
+    clearTimeout(timerTremor);
+    timerTremor = setTimeout(() => document.documentElement.classList.remove('tremendo'), VIBRACAO);
 
     setTimeout(() => { if (rodada === rodadaAtual) final.classList.add('ativo'); }, TEMPO_BOTAO_DE_NOVO);
     setTimeout(() => { if (rodada === rodadaAtual) voltarAbertura(); }, DURACAO_DO_SUSTO);
