@@ -257,6 +257,26 @@
   botaoSom.addEventListener('click', () => { semSom = !semSom; atualizarBotaoSom(); });
   atualizarBotaoSom();
 
+  // ===== Vibração no iPhone (iOS 18+): o switch nativo do Safari dá um toque tátil =====
+  // Gambiarra: dispara vários toques seguidos para simular uma vibração contínua.
+  // Não é garantido: o iOS pode ignorar toques que não vêm direto de um gesto do usuário.
+  const rotuloHaptic = document.createElement('label');
+  rotuloHaptic.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none';
+  rotuloHaptic.innerHTML = '<input type="checkbox" switch>';
+  document.body.appendChild(rotuloHaptic);
+  let timerHaptic = null;
+
+  function vibrarIOS(ms) {
+    clearInterval(timerHaptic);
+    const fim = Date.now() + ms;
+    const toque = () => {
+      if (Date.now() >= fim) { clearInterval(timerHaptic); return; }
+      rotuloHaptic.click();
+    };
+    toque();
+    timerHaptic = setInterval(toque, 60);
+  }
+
   // ===== Ciclo infinito: abertura -> susto -> abertura =====
   let proximoSusto = null, rodadaAtual = 0;
 
@@ -293,6 +313,7 @@
 
     // vibração (Android/Chrome; iPhone não suporta)
     if ('vibrate' in navigator) navigator.vibrate(VIBRACAO);
+    else vibrarIOS(VIBRACAO);
 
     setTimeout(() => { if (rodada === rodadaAtual) final.classList.add('ativo'); }, TEMPO_BOTAO_DE_NOVO);
     setTimeout(() => { if (rodada === rodadaAtual) voltarAbertura(); }, DURACAO_DO_SUSTO);
@@ -315,6 +336,7 @@
     grito.play().then(() => { grito.pause(); grito.currentTime = 0; grito.muted = semSom; })
                 .catch(() => { grito.muted = semSom; });
     video.play().then(() => { video.pause(); video.currentTime = 0; }).catch(() => {});
+    if (!('vibrate' in navigator)) rotuloHaptic.click();   // "aquece" o haptic dentro do gesto
     agendarSusto();
   });
 </script>
