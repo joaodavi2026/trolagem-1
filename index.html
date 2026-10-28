@@ -227,7 +227,8 @@
   const ARQUIVOS = { video: 'zom.mp4', grito: 'grito.mp3', imagem: 'zumbi.jpg' };
 
   // ===== Ajustes rápidos =====
-  const ESPERA_ANTES_DO_SUSTO = 3000;   // ms até o zumbi aparecer
+  const ESPERA_ANTES_DO_SUSTO = 4000;   // ms até o zumbi aparecer
+  const VIBRACAO              = [400, 100, 400]; // padrão da vibração (ms), só onde há suporte
   const DURACAO_DO_SUSTO      = 2000;   // ms que o zumbi fica na tela
   const TEMPO_BOTAO_DE_NOVO   = 1200;   // ms até o botão "Ver de novo" aparecer
 
@@ -267,6 +268,7 @@
   function voltarAbertura() {
     rodadaAtual++;                       // invalida temporizadores da rodada anterior
     video.pause(); grito.pause();
+    if ('vibrate' in navigator) navigator.vibrate(0);
     susto.classList.remove('ativo');
     final.classList.remove('ativo');
     agendarSusto();
@@ -289,6 +291,9 @@
     // grito (separado, para não depender do vídeo)
     try { grito.currentTime = 0; } catch (e) {}
     grito.play().catch(() => {});
+
+    // vibração (Android/Chrome; iPhone não suporta)
+    if ('vibrate' in navigator) navigator.vibrate(VIBRACAO);
 
     setTimeout(() => { if (rodada === rodadaAtual) final.classList.add('ativo'); }, TEMPO_BOTAO_DE_NOVO);
     setTimeout(() => { if (rodada === rodadaAtual) voltarAbertura(); }, DURACAO_DO_SUSTO);
